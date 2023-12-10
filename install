@@ -1,0 +1,83 @@
+#!/bin/bash
+# Step 1: Install Apache Web Server
+sudo dnf install httpd
+
+# - Start and enable apache server
+sudo systemctl start httpd
+sudo systemctl enable httpd
+
+# - Load ```LAMPP NG``` Config file
+sudo touch /etc/httpd/conf.d/lampp.conf
+
+sudo chmod 777 /etc/httpd/conf.d/lampp.conf
+sudo cat conf.d/httpd/conf.d/lampp.conf > /etc/httpd/conf.d/lampp.conf
+
+sudo chmod 777 /etc/httpd/conf.d/lampp.conf
+
+# - Then verify httpd service is running properly:
+sudo systemctl status httpd 
+
+# Step 2: Install MariaDB Database Server
+sudo dnf install mariadb-server 
+
+# - Start and enable mariadb server
+sudo systemctl start mariadb
+sudo systemctl enable mariadb
+
+# Step 3: Secure MySQL Installation
+sudo mysql_secure_installation 
+
+# Now check the MariaDB service status.
+sudo systemctl status mariadb
+
+# Step 4: Install PHP
+sudo dnf install php php-common php-mysqlnd 
+
+# -then install modules -> [28 Packages | size: 39 Mo]
+sudo dnf install php-json php-gd php-cgi httpd-tools mod_ssl
+
+echo "========================================================================="
+echo -e "$(php -v)"
+echo "========================================================================="
+
+
+# Step 5: Add Firewall Rules
+# - Check if `'firewall-cmd'`/ufw firewalling exist
+command -v firewall-cmd
+sudo firewall-cmd --add-service=http --permanent
+sudo firewall-cmd --add-service=https --permanent
+
+sudo systemctl reload firewalld 
+
+# 
+sudo systemctl restart httpd
+
+# Step 8: Test the LAMP Stack
+
+# Step 9: Installing phpMyAdmin on Fedora from Default Repository
+sudo dnf install phpmyadmin 
+
+# Step 10: Allow phpMyAdmin Access to Remote Hosts
+# sudo touch /etc/httpd/conf.d/phpmyadmin.conf
+
+# then
+sudo systemctl restart httpd
+
+# Step 11: File && Perrmissions
+sudo chmod -R 777 /var/www/html/
+# sudo chmod -R 755 /var/www/html/*
+
+# Step 12: SSL - activated by default
+
+### Relax access to content within /var/www
+# - Check for ```/home/$USER/Public/``` path then
+mkdir /home/$USER/Public/
+ln -s /var/www/html/ /home/$USER/Public/htdocs/
+rm /home/$USER/Public/htdocs/html
+
+sudo chmod 777 /etc/httpd/conf.d/phpMyAdmin.conf
+sudo cat conf.d/phpMyAdmin/phpMyAdmin.conf > /etc/httpd/conf.d/phpMyAdmin.conf
+
+sudo chmod 644 /etc/httpd/conf.d/phpMyAdmin.conf
+
+# !Option: add a personal host
