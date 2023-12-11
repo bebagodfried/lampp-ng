@@ -1,10 +1,13 @@
 #!/bin/bash
+
+sudo dnf update -y
+
 # Step 1: Install Apache Web Server
-sudo dnf install httpd
+sudo dnf install httpd -y
 
 # - Start and enable apache server
-sudo systemctl start httpd
-sudo systemctl enable httpd
+sudo systemctl start httpd -y
+sudo systemctl enable httpd -y
 
 # - Load ```LAMPP NG``` Config file
 sudo touch /etc/httpd/conf.d/lampp.conf
@@ -18,7 +21,7 @@ sudo chmod 777 /etc/httpd/conf.d/lampp.conf
 sudo systemctl status httpd 
 
 # Step 2: Install MariaDB Database Server
-sudo dnf install mariadb-server 
+sudo dnf install mariadb-server -y
 
 # - Start and enable mariadb server
 sudo systemctl start mariadb
@@ -31,10 +34,10 @@ sudo mysql_secure_installation
 sudo systemctl status mariadb
 
 # Step 4: Install PHP
-sudo dnf install php php-common php-mysqlnd 
+sudo dnf install php php-common php-mysqlnd -y
 
 # -then install modules -> [28 Packages | size: 39 Mo]
-sudo dnf install php-json php-gd php-cgi httpd-tools mod_ssl
+sudo dnf install php-json php-gd php-cgi httpd-tools mod_ssl -y
 
 echo "========================================================================="
 echo -e "$(php -v)"
@@ -55,10 +58,10 @@ sudo systemctl restart httpd
 # Step 8: Test the LAMP Stack
 
 # Step 9: Installing phpMyAdmin on Fedora from Default Repository
-sudo dnf install phpmyadmin 
+sudo dnf install phpmyadmin -y
 
 # Step 10: Allow phpMyAdmin Access to Remote Hosts
-# sudo touch /etc/httpd/conf.d/phpmyadmin.conf
+sudo cat conf.d/phpMyAdmin/grant.conf > /etc/httpd/conf.d/phpMyAdmin.conf 
 
 # then
 sudo systemctl restart httpd
@@ -72,12 +75,18 @@ sudo chmod -R 777 /var/www/html/
 ### Relax access to content within /var/www
 # - Check for ```/home/$USER/Public/``` path then
 mkdir /home/$USER/Public/
-ln -s /var/www/html/ /home/$USER/Public/htdocs/
+ln -s /var/www/html/ /home/$USER/Public/htdocs
 rm /home/$USER/Public/htdocs/html
 
 sudo chmod 777 /etc/httpd/conf.d/phpMyAdmin.conf
 sudo cat conf.d/phpMyAdmin/phpMyAdmin.conf > /etc/httpd/conf.d/phpMyAdmin.conf
 
 sudo chmod 644 /etc/httpd/conf.d/phpMyAdmin.conf
+
+
+# ---------------------------------------------------
+
+echo "<?php phpinfo() ?>" > /home/$USER/Public/htdocs/info.php
+xdg-open https://localhost/info.php || echo https://my.domaine/info.php
 
 # !Option: add a personal host
