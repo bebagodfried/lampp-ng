@@ -60,8 +60,11 @@ sudo systemctl restart httpd
 # Step 9: Installing phpMyAdmin on Fedora from Default Repository
 sudo dnf install phpmyadmin -y
 
-# Step 10: Allow phpMyAdmin Access to Remote Hosts
-sudo cat conf.d/phpMyAdmin/grant.conf > /etc/httpd/conf.d/phpMyAdmin.conf 
+# Step 10: Allow phpMyAdmin via a Remote Access
+sudo chmod 777 /etc/httpd/conf.d/phpMyAdmin.conf
+sudo cat conf.d/phpMyAdmin/grant.conf > /etc/httpd/conf.d/phpMyAdmin.conf
+
+sudo chmod 644 /etc/httpd/conf.d/phpMyAdmin.conf
 
 # then
 sudo systemctl restart httpd
@@ -76,17 +79,12 @@ sudo chmod -R 777 /var/www/html/
 # - Check for ```/home/$USER/Public/``` path then
 mkdir /home/$USER/Public/
 ln -s /var/www/html/ /home/$USER/Public/htdocs
-rm /home/$USER/Public/htdocs/html
-
-sudo chmod 777 /etc/httpd/conf.d/phpMyAdmin.conf
-sudo cat conf.d/phpMyAdmin/phpMyAdmin.conf > /etc/httpd/conf.d/phpMyAdmin.conf
-
-sudo chmod 644 /etc/httpd/conf.d/phpMyAdmin.conf
-
+rm /home/$USER/Public/htdocs/html >> /dev/null
 
 # ---------------------------------------------------
-
+echo
+echo "========================================================================="
 echo "<?php phpinfo() ?>" > /home/$USER/Public/htdocs/info.php
-xdg-open https://localhost/info.php || echo https://my.domaine/info.php
+xdg-open https://localhost/info.php >> /dev/null || echo Your server informations here: https://localhost/info.php
 
 # !Option: add a personal host
