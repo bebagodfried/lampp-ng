@@ -321,4 +321,6 @@ Step 12: SSL
  ln -s /var/www/html/ /home/$USER/Public/htdocs
 ```
 
+- Open or display url to server
+
 !Option: add a personal host

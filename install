@@ -81,10 +81,12 @@ mkdir /home/$USER/Public/
 ln -s /var/www/html/ /home/$USER/Public/htdocs
 rm /home/$USER/Public/htdocs/html >> /dev/null
 
+### 
+
 # ---------------------------------------------------
 echo
 echo "========================================================================="
 echo "<?php phpinfo() ?>" > /home/$USER/Public/htdocs/info.php
-xdg-open https://localhost/info.php >> /dev/null || echo Your server informations here: https://localhost/info.php
+xdg-open https://localhost/info.php || echo Your server informations here: https://localhost/info.php
 
 # !Option: add a personal host

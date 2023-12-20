@@ -119,6 +119,16 @@ if [ $1 ];
         fi
 
         # 
+        if [ $1 = '--allow-remote' ];
+          then
+            # reassign Firewall Rules
+            sudo firewall-cmd --add-service=http --permanent
+            sudo firewall-cmd --add-service=https --permanent
+
+            exit 0
+        fi
+
+        # 
         if [ $1 = '--help' ];
           then
             echo "
