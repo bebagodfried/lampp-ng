@@ -35,8 +35,14 @@
 
 8. more features coming soon ...
 
-**Full Changelog**: https://github.com/bebagodfried/lampp-ng/compare/v1.0-beta.2...v1.1
 <hr>
 
-**<u>License</u>**: MIT |
-**<u>Author</u>**: Béba Godfried A.
+- **Full Changelog**: [here](https://github.com/bebagodfried/lampp-ng/compare/v1.0-beta.2...v1.1)
+
+- **Feedback** 
+Please report issues and feature requests [here](https://github.com/bebagodfried/lampp-ng/issues).
+
+<hr>
+
+**<u>License</u>**: [MIT License](https://github.com/bebagodfried/lampp-ng/blob/3818009932ae7276ab021e1eff83153924948cf3/license) |
+**<u>Author</u>**: [Béba Godfried A.](dev@bebagodfried.com)
