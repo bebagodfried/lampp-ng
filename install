@@ -1,92 +1,275 @@
 #!/bin/bash
+# -----------------------------------------------
+# license: MIT
+# Author: Béba Godfried A. <dev@bebagodfried.com>
+# -----------------------------------------------
+# Bash
+red='\033[0;31m'
+green='\033[0;32m'
+warning='\033[0;33m'
+reset='\033[0m' # No Color
 
-sudo dnf update -y
+# env
+httpd='httpd'
 
-# Step 1: Install Apache Web Server
-sudo dnf install httpd -y
+w3_server='httpd'
+db_server='mariadb-server'
+
+w3_htdocs='/var/www/html/'
+
+lamppctl=$(pwd)/bin/lampp
+
+# packages manager
+if ( command -v apt-get >> /dev/null );then
+    pkg='apt'
+else
+    if ( command -v yum >> /dev/null );then
+        pkg='yum'
+    else
+        if ( command -v pamac >> /dev/null );then
+            pkg='pamac'
+            w3_server='apache'
+            db_server='mariadb'
+            w3_htdocs='/srv/http'
+        else
+            if ( command -v zypper >> /dev/null );then
+                pkg='zypper'
+            else
+                echo 'Exit(1)::Unsupported package'
+                exit 1
+            fi
+        fi
+    fi
+fi
+
+# function
+function cls() {
+    clear
+}
+
+function wait() {
+    echo
+    read -p 'Press (enter) to continue ' esc
+}
+
+function head() {
+    echo -e "${green}LAMP Stack - NG :: Linux Apache2 MariaDB PHP${reset}"
+    echo -e "$(uname -a)"
+    echo ''
+}
+
+function get_phpmyadmin() {
+    cd $w3_htdocs
+    sudo wget 'https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip'
+    sudo unzip -o 'phpMyAdmin-5.2.1-all-languages.zip'
+    sudo rm 'phpMyAdmin-5.2.1-all-languages.zip'
+
+    sudo mv -f 'phpMyAdmin-5.2.1-all-languages' 'phpmyadmin'
+    sudo chown root:root phpmyadmin/
+    sudo chmod 755 phpmyadmin/
+}
+
+# start
+cls && head
+echo -e "Web server    : ${green}$w3_server${reset}"
+echo -e "MySQL server  : ${green}$db_server${reset}"
+echo -e "Documents root: ${green}$w3_htdocs${reset}"
+wait
+sudo $pkg update
+
+# Step 1: Web Server
+
+cls && head
+echo -e "${green}Installing Packages:${reset}"
+echo '===================='
+echo -e "${warning}# => Apache Web Server...${reset}"
+sudo $pkg install $w3_server
 
 # - Start and enable apache server
-sudo systemctl start httpd -y
-sudo systemctl enable httpd -y
+# - mod_rewrite on Debian-based Systems
+if ( command -v a2enmod >> /dev/null );then
+    sudo a2enmod rewrite 
+fi
 
-# - Load ```LAMPP NG``` Config file
-sudo touch /etc/httpd/conf.d/lampp.conf
+# - mod_rewrite on RHEL-based Systems
+if ( command -v httpd >> /dev/null );then
+	# unlock `httpd.conf`
+	sudo chmod 777 /etc/httpd/conf/httpd.conf
+	
+	# write `httpd.conf`
+	sudo cp conf.d/httpd.conf /etc/httpd/conf/httpd.conf
+	
+	# lock `httpd.conf`
+	sudo chmod 644 /etc/httpd/conf/httpd.conf
+fi
 
-sudo chmod 777 /etc/httpd/conf.d/lampp.conf
-sudo cat conf.d/httpd/conf.d/lampp.conf > /etc/httpd/conf.d/lampp.conf
+sudo systemctl start $httpd
+sudo systemctl enable $httpd
 
-sudo chmod 777 /etc/httpd/conf.d/lampp.conf
+# Step 2: Database Server
 
-# - Then verify httpd service is running properly:
-sudo systemctl status httpd 
+echo ''
+echo -e "${warning}# => MariaDB Database Server ...${reset}"
 
-# Step 2: Install MariaDB Database Server
-sudo dnf install mariadb-server -y
+sudo $pkg install $db_server
 
 # - Start and enable mariadb server
+
 sudo systemctl start mariadb
 sudo systemctl enable mariadb
 
-# Step 3: Secure MySQL Installation
-sudo mysql_secure_installation 
+# Step 3: PHP
 
-# Now check the MariaDB service status.
-sudo systemctl status mariadb
+echo ''
+echo -e "${warning}# => PHP & modules dependencies...${reset}"
+sudo $pkg install php php-common php-mysqlnd php-pdo
 
-# Step 4: Install PHP
-sudo dnf install php php-common php-mysqlnd -y
+if [ $w3_server == 'apache' ]; then
+    sudo $pkg install php-$w3_server
+fi
+echo ''
 
-# -then install modules -> [28 Packages | size: 39 Mo]
-sudo dnf install php-json php-gd php-cgi httpd-tools mod_ssl -y
+sudo $pkg install php-json php-xsl php-gd php-fpm php-cgi php-snmp httpd-tools mod_ssl
+echo ''
 
-echo "========================================================================="
-echo -e "$(php -v)"
-echo "========================================================================="
+sudo $pkg install php-mysqli
+echo ''
 
+sudo $pkg install composer
 
-# Step 5: Add Firewall Rules
+# Step 4: Get phpMyAdmin GitHub Repository
+echo ''
+read -p "$(echo -e ${warning})# => Get phpMyAdmin ? [y/N] $(echo -e ${reset})" pma
+
+if [ "$pma" == "y" ];then
+    get_phpmyadmin
+else
+    if [ "$pma" == "yes" ];then
+        get_phpmyadmin
+    else
+        if [ "$pma" == "Y" ];then
+            get_phpmyadmin
+        else
+            echo 'skipped ...'
+        fi
+    fi
+fi
+
+# pause
+wait
+cls && head
+
+# Step 5: Config Firewall Rules
+
+echo -e "${green}Configuring Firewall:${reset}"
+echo '====================='
+
 # - Check if `'firewall-cmd'`/ufw firewalling exist
-command -v firewall-cmd
-sudo firewall-cmd --add-service=http --permanent
-sudo firewall-cmd --add-service=https --permanent
 
-sudo systemctl reload firewalld 
+if ( command -v firewall-cmd >> /dev/null );then
+    sudo systemctl start firewalld
+    sudo systemctl enable firewalld
 
-# 
-sudo systemctl restart httpd
+    sudo firewall-cmd --add-service=http --permanent
+    sudo firewall-cmd --add-service=https --permanent
+    
+	# - reload firewall to apply changes
+	sudo systemctl reload firewalld
+else
+    if ( command -v ufw >> /dev/null );then
+        sudo systemctl start ufw
+        sudo systemctl enable ufw
 
-# Step 8: Test the LAMP Stack
+        sudo ufw allow http
+        sudo ufw allow https
+        
+        # - reload firewall to apply changes
+        sudo systemctl reload ufw
+    else
+        sudo $pkg install firewalld
 
-# Step 9: Installing phpMyAdmin on Fedora from Default Repository
-sudo dnf install phpmyadmin -y
+        sudo systemctl start firewalld
+        sudo systemctl enable firewalld
 
-# Step 10: Allow phpMyAdmin via a Remote Access
-sudo chmod 777 /etc/httpd/conf.d/phpMyAdmin.conf
-sudo cat conf.d/phpMyAdmin/grant.conf > /etc/httpd/conf.d/phpMyAdmin.conf
+        sudo firewall-cmd --add-service=http --permanent
+        sudo firewall-cmd --add-service=https --permanent
+        
+        # - reload firewall to apply changes
+        sudo systemctl reload firewalld
+    fi
+fi
 
-sudo chmod 644 /etc/httpd/conf.d/phpMyAdmin.conf
+# --- allow httpd to unified
+sudo setsebool -P httpd_unified 1
 
-# then
-sudo systemctl restart httpd
+# --- allow httpd to read user content
+sudo setsebool -P httpd_read_user_content 1
 
-# Step 11: File && Perrmissions
-sudo chmod -R 777 /var/www/html/
-# sudo chmod -R 755 /var/www/html/*
+# --- allow httpd to can network connect
+sudo setsebool -P httpd_can_network_connect 1
 
-# Step 12: SSL - activated by default
+# --- restart $httpd service to load firewall rules
+sudo setsebool -P httpd_graceful_shutdown 1
 
-### Relax access to content within /var/www
-# - Check for ```/home/$USER/Public/``` path then
-mkdir /home/$USER/Public/
-ln -s /var/www/html/ /home/$USER/Public/htdocs
-rm /home/$USER/Public/htdocs/html >> /dev/null
+# --- allow httpd to can network relay
+sudo setsebool -P httpd_can_network_relay 1
 
-### 
+# --- allow nis to enabled
+sudo setsebool -P nis_enabled 1
+
+
+sudo systemctl restart $httpd
+wait
+clear
+
+# Step 7: Secure MySQL Installation
+
+echo -e "${green}MySQL Configurations:${reset}"
+echo '====================='
+
+sudo mysql_secure_installation
+# sudo mysql -h '' -u root -p < my.sql
+
+# pause
+echo ""
+
+# then restart $httpd service to load new configuration
+
+sudo systemctl restart $httpd
+
+# Step 8: File && Permissions
+
+# - Document_root is `$w3_htdocs`
+# - Enable write permissions on `document_root`
+sudo chmod -R 777 $w3_htdocs
+
+# Step 9: SSL - activated by lampp-ng config
+
+### Relax access to /var/www/html from $HOME/ folder
+ln -s $w3_htdocs $HOME/www
+rm $HOME/www/html
 
 # ---------------------------------------------------
-echo
-echo "========================================================================="
-echo "<?php phpinfo() ?>" > /home/$USER/Public/htdocs/info.php
-xdg-open https://localhost/info.php || echo Your server informations here: https://localhost/info.php
+cls
+echo ''
+echo "All done!  If you've completed all of the above steps, your LAMPP-NG"
+echo 'installation should now be functional.'
+echo ''
+echo -e "${green}Thanks for using LAMPP-NG!${reset}"
+
+sudo cp $lamppctl /usr/bin
+echo "<?php phpinfo() ?>" > $HOME/www/info.php
+
+if [ $(id -u) == 0 ]; then
+    echo Your server informations here: https://localhost/info.php
+else
+    xdg-open https://localhost/info.php
+fi
+
+lampp --new-index
+
+wait
+lampp --help
 
 # !Option: add a personal host
+# eof
