@@ -36,5 +36,12 @@
 8. more features coming soon ...
 <hr>
 
-**<u>License</u>**: MIT |
-**<u>Author</u>**: Béba Godfried A.
+### Feedback
+Please report issues and feature requests [here](https://github.com/bebagodfried/lampp-ng/issues).
+
+<hr>
+
+**<u>License</u>**: [MIT License](https://github.com/bebagodfried/lampp-ng/blob/3818009932ae7276ab021e1eff83153924948cf3/LICENSE) |
+**<u>Author</u>**: [Béba Godfried A.](dev@bebagodfried.com)|
+
+
