@@ -34,6 +34,8 @@
 7. **php-common**: a package that includes common files for PHP packages. It contains utilities shared among all packaged PHP versions.
 
 8. more features coming soon ...
+
+**Full Changelog**: https://github.com/bebagodfried/lampp-ng/compare/v1.0-beta.2...v1.1
 <hr>
 
 **<u>License</u>**: MIT |
