@@ -41,7 +41,7 @@ Please report issues and feature requests [here](https://github.com/bebagodfried
 
 <hr>
 
-**<u>License</u>**: [MIT License](https://github.com/bebagodfried/lampp-ng/blob/3818009932ae7276ab021e1eff83153924948cf3/LICENSE) |
+**<u>License</u>**: [MIT License](https://github.com/bebagodfried/lampp-ng/blob/3818009932ae7276ab021e1eff83153924948cf3/license) |
 **<u>Author</u>**: [Béba Godfried A.](dev@bebagodfried.com)|
 
 
