@@ -58,7 +58,7 @@ FLUSH PRIVILEGES;
 
 <hr>
 
-- **Full Changelog**: [here](https://github.com/bebagodfried/lampp-ng/compare/v1.0-beta.2...v1.1)
+- **Full Changelog**: [here](https://github.com/bebagodfried/lampp-ng/commit/1d95bf51f8ab33015e3b37d0c8903aad6dca2e43)
 
 - **Feedback** 
 Please report issues and feature requests [here](https://github.com/bebagodfried/lampp-ng/issues).
