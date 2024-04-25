@@ -1,4 +1,5 @@
 #!/bin/bash
+# LAMP Stack - NG :: Linux Apache2 MariaDB PHP
 # -----------------------------------------------
 # license: MIT
 # Author: Béba Godfried A. <dev@bebagodfried.com>
@@ -17,29 +18,27 @@ db_server='mariadb-server'
 
 w3_htdocs='/var/www/html/'
 
-lamppctl=$(pwd)/bin/lampp
+lamppctl="bin/lampp"
 
 # packages manager
 if ( command -v apt-get >> /dev/null );then
     pkg='apt'
-else
-    if ( command -v yum >> /dev/null );then
+
+elif ( command -v yum >> /dev/null );then
         pkg='yum'
-    else
-        if ( command -v pamac >> /dev/null );then
-            pkg='pamac'
-            w3_server='apache'
-            db_server='mariadb'
-            w3_htdocs='/srv/http'
-        else
-            if ( command -v zypper >> /dev/null );then
-                pkg='zypper'
-            else
-                echo 'Exit(1)::Unsupported package'
-                exit 1
-            fi
-        fi
-    fi
+
+elif ( command -v pamac >> /dev/null );then
+    pkg='pamac'
+    w3_server='apache'
+    db_server='mariadb'
+    w3_htdocs='/srv/http'
+
+elif ( command -v zypper >> /dev/null );then
+    pkg='zypper'
+
+else
+    echo 'Exit(1)::Unsupported package'
+    exit 1
 fi
 
 # function
@@ -49,7 +48,7 @@ function cls() {
 
 function wait() {
     echo
-    read -p 'Press (enter) to continue ' esc
+    read -rp 'Press (enter) to continue '
 }
 
 function head() {
@@ -59,14 +58,33 @@ function head() {
 }
 
 function get_phpmyadmin() {
-    cd $w3_htdocs
-    sudo wget 'https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip'
-    sudo unzip -o 'phpMyAdmin-5.2.1-all-languages.zip'
-    sudo rm 'phpMyAdmin-5.2.1-all-languages.zip'
+    # head
+    function pma_install() {
+        cd "$w3_htdocs" || echo "${red}Something went wrong! please try again${reset}"
+        sudo wget 'https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip'
+        sudo unzip -o 'phpMyAdmin-5.2.1-all-languages.zip'
+        sudo rm 'phpMyAdmin-5.2.1-all-languages.zip'
 
-    sudo mv -f 'phpMyAdmin-5.2.1-all-languages' 'phpmyadmin'
-    sudo chown root:root phpmyadmin/
-    sudo chmod 755 phpmyadmin/
+        sudo mv -f 'phpMyAdmin-5.2.1-all-languages' 'phpmyadmin'
+        sudo chown root:root phpmyadmin/
+        sudo chmod 755 phpmyadmin/
+    }
+
+    # main
+    read -rp "$(echo -e "${warning}# => Get phpMyAdmin ? [y/N] ${reset}")" pma
+
+    if [ "$pma" == "y" ];then
+        pma_install
+
+    elif [ "$pma" == "yes" ];then
+        pma_install
+
+    elif [ "$pma" == "Y" ];then
+        pma_install
+
+    else
+        echo 'skipped ...'
+    fi
 }
 
 # start
@@ -118,7 +136,7 @@ sudo $pkg install $db_server
 sudo systemctl start mariadb
 sudo systemctl enable mariadb
 
-# Step 3: PHP
+# Step 3: PHP and dependencies
 
 echo ''
 echo -e "${warning}# => PHP & modules dependencies...${reset}"
@@ -135,25 +153,12 @@ echo ''
 sudo $pkg install php-mysqli
 echo ''
 
-sudo $pkg install composer
+sudo $pkg install git composer
 
 # Step 4: Get phpMyAdmin GitHub Repository
-echo ''
-read -p "$(echo -e ${warning})# => Get phpMyAdmin ? [y/N] $(echo -e ${reset})" pma
 
-if [ "$pma" == "y" ];then
-    get_phpmyadmin
-else
-    if [ "$pma" == "yes" ];then
-        get_phpmyadmin
-    else
-        if [ "$pma" == "Y" ];then
-            get_phpmyadmin
-        else
-            echo 'skipped ...'
-        fi
-    fi
-fi
+echo ''
+get_phpmyadmin
 
 # pause
 wait
@@ -170,53 +175,70 @@ if ( command -v firewall-cmd >> /dev/null );then
     sudo systemctl start firewalld
     sudo systemctl enable firewalld
 
-    sudo firewall-cmd --add-service=http --permanent
-    sudo firewall-cmd --add-service=https --permanent
+    # shellcheck disable=SC2091
+    if ( ! "firewall-cmd" --list-services | grep -q "https" ); then
+        sudo firewall-cmd --add-service=http --permanent
+        sudo firewall-cmd --add-service=https --permanent
+
+    else
+        echo -e "${green} ALREADY_ENABLED ${reset}"
+    fi
     
 	# - reload firewall to apply changes
 	sudo systemctl reload firewalld
-else
-    if ( command -v ufw >> /dev/null );then
-        sudo systemctl start ufw
-        sudo systemctl enable ufw
+elif ( command -v ufw >> /dev/null );then
+    sudo systemctl start ufw
+    sudo systemctl enable ufw
 
+    # shellcheck disable=SC2091
+    if ( ! ufw services list | grep -q "https" ); then
         sudo ufw allow http
         sudo ufw allow https
-        
-        # - reload firewall to apply changes
-        sudo systemctl reload ufw
+
     else
-        sudo $pkg install firewalld
+        echo -e "${green} ALREADY_ENABLED ${reset}"
+    fi
 
-        sudo systemctl start firewalld
-        sudo systemctl enable firewalld
+    # - reload firewall to apply changes
+    sudo systemctl reload ufw
+else
+    sudo $pkg install firewalld
 
+    sudo systemctl start firewalld
+    sudo systemctl enable firewalld
+
+    # shellcheck disable=SC2091
+    if ( ! "firewall-cmd" --list-services | grep -q "https" ); then
         sudo firewall-cmd --add-service=http --permanent
         sudo firewall-cmd --add-service=https --permanent
-        
-        # - reload firewall to apply changes
-        sudo systemctl reload firewalld
+
+    else
+        echo -e "${green} ALREADY_ENABLED ${reset}"
     fi
+
+    # - reload firewall to apply changes
+    sudo systemctl reload firewalld
 fi
 
-# --- allow httpd to unified
-sudo setsebool -P httpd_unified 1
+if ( command -v setsbool >> /dev/null ); then
+    # --- allow httpd to unified
+    sudo setsebool -P httpd_unified 1
 
-# --- allow httpd to read user content
-sudo setsebool -P httpd_read_user_content 1
+    # --- allow httpd to read user content
+    sudo setsebool -P httpd_read_user_content 1
 
-# --- allow httpd to can network connect
-sudo setsebool -P httpd_can_network_connect 1
+    # --- allow httpd to can network connect
+    sudo setsebool -P httpd_can_network_connect 1
 
-# --- restart $httpd service to load firewall rules
-sudo setsebool -P httpd_graceful_shutdown 1
+    # --- restart $httpd service to load firewall rules
+    sudo setsebool -P httpd_graceful_shutdown 1
 
-# --- allow httpd to can network relay
-sudo setsebool -P httpd_can_network_relay 1
+    # --- allow httpd to can network relay
+    sudo setsebool -P httpd_can_network_relay 1
 
-# --- allow nis to enabled
-sudo setsebool -P nis_enabled 1
-
+    # --- allow nis to enabled
+    sudo setsebool -P nis_enabled 1
+fi
 
 sudo systemctl restart $httpd
 wait
@@ -230,11 +252,8 @@ echo '====================='
 sudo mysql_secure_installation
 # sudo mysql -h '' -u root -p < my.sql
 
-# pause
-echo ""
-
 # then restart $httpd service to load new configuration
-
+echo ''
 sudo systemctl restart $httpd
 
 # Step 8: File && Permissions
@@ -243,11 +262,13 @@ sudo systemctl restart $httpd
 # - Enable write permissions on `document_root`
 sudo chmod -R 777 $w3_htdocs
 
-# Step 9: SSL - activated by lampp-ng config
+# Step 9: SSL - activated by lampp-ng rules
 
-### Relax access to /var/www/html from $HOME/ folder
-ln -s $w3_htdocs $HOME/www
-rm $HOME/www/html
+### Relax access to `/var/www/html` from `$HOME/` folder
+ln -s "$w3_htdocs" "$HOME/www"
+if [ -e "$HOME/www/html" ];then
+    rm "$HOME/www/html"
+fi
 
 # ---------------------------------------------------
 cls
@@ -257,12 +278,19 @@ echo 'installation should now be functional.'
 echo ''
 echo -e "${green}Thanks for using LAMPP-NG!${reset}"
 
-sudo cp $lamppctl /usr/bin
-echo "<?php phpinfo() ?>" > $HOME/www/info.php
+sudo cp "$lamppctl" /bin
+sudo chmod 755 /bin/lampp
 
-if [ $(id -u) == 0 ]; then
-    echo Your server informations here: https://localhost/info.php
+# kde folder icon
+echo "[Desktop Entry]" >> "$HOME/www/.directory"
+echo "Icon=folder_html" >> "$HOME/www/.directory"
+
+echo "<?php phpinfo() ?>" > "$HOME/www/info.php"
+
+if [ "$(id -u)" == 0 ]; then
+    echo "Your server information's here: https://localhost/info.php"
 else
+    echo "Opening your server informations."
     xdg-open https://localhost/info.php
 fi
 
@@ -271,5 +299,5 @@ lampp --new-index
 wait
 lampp --help
 
-# !Option: add a personal host
+# Option: add a personal host
 # eof

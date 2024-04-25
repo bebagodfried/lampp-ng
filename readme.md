@@ -35,6 +35,27 @@
 
 8. more features coming soon ...
 
+### How-to MySQL DB Configurations
+
+- **Creating a `root` users** <br>
+CREATE USER 'root'@'%' IDENTIFIED BY 'root'; <br>
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+<br><br>
+
+- **Remove anonymous users** <br>
+DROP USER 'anonymous';
+<br><br>
+
+- **Remove test database and access to it** <br>
+DROP DATABASE 'test';
+<br><br>
+
+- **Reload privilege tables** <br>
+FLUSH PRIVILEGES;
+
+#### Tested on:
+- fedora 38/39
+
 <hr>
 
 - **Full Changelog**: [here](https://github.com/bebagodfried/lampp-ng/compare/v1.0-beta.2...v1.1)

@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/bin/bash
 # LAMP Stack - NG :: Linux Apache2 MariaDB PHP
 # -----------------------------------------------
 # license: MIT
@@ -23,13 +23,14 @@ DOCUMENT_ROOT='/var/www/html' #> used for lampp hosting directory
 new_project=$2
 welcome="Your <u>$new_project</u> project was created successfully"
 
-if ! [[ $2 ]]; then
+if [[ ! $2 ]]; then
     new_project="LAMPP &bull; NG Edition"
     welcome="You installed <u>$new_project</u> successfully!"
 else
     welcome="Your <u>$new_project</u> project was created successfully"
 fi
 
+# shellcheck disable=SC2089
 index="<!DOCTYPE html>
 <html lang='en'>
 <head>
@@ -84,25 +85,23 @@ w3_htdocs='/var/www/html/'
 # packages manager
 if ( command -v apt-get >> /dev/null );then
     pkg='apt'
+
+elif ( command -v yum >> /dev/null );then
+    pkg='yum'
+    db_server='mariadb'
+
+elif ( command -v pamac >> /dev/null );then
+    pkg='pamac'
+    w3_server='apache'
+    db_server='mariadb'
+    w3_htdocs='/srv/http'
+
+elif ( command -v zypper >> /dev/null );then
+    pkg='zypper'
+
 else
-    if ( command -v yum >> /dev/null );then
-        pkg='yum'
-        db_server='mariadb'
-    else
-        if ( command -v pamac >> /dev/null );then
-            pkg='pamac'
-            w3_server='apache'
-            db_server='mariadb'
-            w3_htdocs='/srv/http'
-        else
-            if ( command -v zypper >> /dev/null );then
-                pkg='zypper'
-            else
-                echo 'Exit(1)::Unsupported package'
-                exit 1
-            fi
-        fi
-    fi
+    echo 'Exit(1)::Unsupported package'
+    exit 1
 fi
 
 # function
@@ -112,7 +111,7 @@ function cls() {
 
 function wait() {
     echo
-    read -p 'Press (enter) to continue ' esc
+    read -rp 'Press (enter) to continue '
 }
 
 function head() {
@@ -124,26 +123,26 @@ function head() {
 
 #
 error() {
-        local err_log=$1
-        echo "lampp: $err_log"
-        echo "Try 'lampp --help' for more information."
-        echo
-      }
+    local err_log=$1
+    echo "lampp: $err_log"
+    echo "Try 'lampp --help' for more information."
+    echo
+}
+
 #
-if [[ $1 ]]; then
+if [[ $1 ]];then
     if [[ $2 ]]; then
         # 
-        if [[ $1 = '--start' || $1 = '-s' ]];
-          then
+        if [[ $1 = '--start' || $1 = '-s' ]];then
             clear
-            sudo systemctl start $2
+            sudo systemctl start "$2"
             
-            if [[ $? == 0 ]]; then
+            if [[ "$?" == 0 ]]; then
                 head
                 echo "$2 is running"
             else
                 head
-                echo "Can't start $2"
+                echo "${red}Can't start $2${reset}"
             fi
 
             exit 0
@@ -154,12 +153,12 @@ if [[ $1 ]]; then
             head
             echo "Restarting $2 ..."
 
-            sudo systemctl restart $2
+            sudo systemctl restart "$2"
                         
             if [[ $? == 0 ]]; then
                 echo "$2 is now running"
             else
-                echo "Can't restart $2"
+                echo "${red}Can't restart $2${reset}"
             fi
 
             exit 0
@@ -168,22 +167,21 @@ if [[ $1 ]]; then
         # 
         if [[ $1 = '--stop' || $1 = '-S' ]];
           then
-            sudo systemctl stop $2
+            sudo systemctl stop "$2"
 
             if [[ $? == 0 ]]; then
                 head
                 echo "$2 is stopped"
             else
                 head
-                echo "Can't stop $2"
+                echo "${red}Can't stop $2${reset}"
             fi
 
             exit 0
         fi
 
         #
-        if [[ $1 = '--new-project' || $1 = '-n' ]];
-          then
+        if [[ $1 = '--new-project' || $1 = '-n' ]];then
             # Configuration
             # - Project
             sudo mkdir "$DOCUMENT_ROOT/$new_project" || echo "$new_project already exists!"
@@ -202,8 +200,7 @@ if [[ $1 ]]; then
         fi
 
         # 
-        if [[ $1 = '--migrate-project' || $1 = '-m' ]];
-          then
+        if [[ $1 = '--migrate-project' || $1 = '-m' ]];then
             # Configuration
             # - Project migration
             sudo cp -Rf "$new_project" "$DOCUMENT_ROOT/"
@@ -217,8 +214,7 @@ if [[ $1 ]]; then
         fi
       else
         #
-        if [[ $1 = '--new-index' ]];
-          then
+        if [[ $1 = '--new-index' ]];then
             # Index
             sudo echo $index > "$DOCUMENT_ROOT/index.php"
 
@@ -229,8 +225,7 @@ if [[ $1 ]]; then
         fi
 
         # 
-        if [[ $1 = '--init' || $1 = '-i' ]];
-          then
+        if [[ $1 = '--init' || $1 = '-i' ]];then
             # Configuration
             # - Users & Premissions
             # - Give $USER privilegies over the document_root
@@ -246,102 +241,105 @@ if [[ $1 ]]; then
         fi
 
         # 
-        if [[ $1 = '--update' || $1 = '-u' ]];
-          then
+        if [[ $1 = '--update' || $1 = '-u' ]];then
             # Check and updates lampp packages
             sudo $pkg update $w3_server $db_server
             exit 0
         fi
 
         # 
-        if [[ $1 = '--start' || $1 = '-s' ]];
-          then
+        if [[ $1 = '--start' || $1 = '-s' ]];then
             clear
             sudo systemctl start $w3_server.service $db_server.service
 
-            if [[ $? == 0 ]]; then
+            if [[ $? == 0 ]];then
                 head
                 echo "$w3_server is running"
                 echo "$db_server is running"
             else
                 head
-                echo "Can't start $w3_server"
-                echo "Can't start $db_server"
+                echo "${red}Can't start $w3_server${reset}"
+                echo "${red}Can't start $db_server${reset}"
             fi
 
             exit 0
         fi
 
         # 
-        if [[ $1 = '--restart' || $1 = '-r' ]];
-          then
+        if [[ $1 = '--restart' || $1 = '-r' ]];then
             clear
             head
             echo "Restarting ..."
             
             sudo systemctl restart $w3_server.service $db_server.service
 
-            if [[ $? == 0 ]]; then
+            if [[ $? == 0 ]];then
                 head
                 echo "$w3_server is now running"
                 echo "$db_server is now running"
             else
                 head
-                echo "Can't restart $w3_server"
-                echo "Can't restart $db_server"
+                echo "${red}${red}Can't restart $w3_server${reset}"
+                echo "${red}${red}Can't restart $db_server${reset}"
             fi
 
             exit 0
         fi
 
         # 
-        if [[ $1 = '--stop' || $1 = '-S' ]];
-          then
+        if [[ $1 = '--stop' || $1 = '-S' ]];then
             clear
             sudo systemctl stop $w3_server.service $db_server.service
 
-            if [[ $? == 0 ]]; then
+            if [[ $? == 0 ]];then
                 head
                 echo "$w3_server is stopped"
                 echo "$db_server is stopped"
             else
                 head
-                echo "Can't stop $w3_server"
-                echo "Can't stop $db_server"
+                echo "${red}Can't stop $w3_server${reset}"
+                echo "${red}Can't stop $db_server${reset}"
             fi
 
             exit 0
         fi
 
         # 
-        if [[ $1 = '--allow-remote' || $1 = '-a' ]];
-          then
+        if [[ $1 = '--allow-remote' || $1 = '-a' ]];then
             # reassign Firewall Rules
             sudo firewall-cmd --add-service=http --permanent
             sudo firewall-cmd --add-service=https --permanent
 
             if ( command -v firewall-cmd >> /dev/null );then
-              sudo systemctl start firewalld
-              sudo systemctl enable firewalld
+                sudo systemctl start firewalld
+                sudo systemctl enable firewalld
 
-              sudo firewall-cmd --add-service=http --permanent
-              sudo firewall-cmd --add-service=https --permanent
-                
-              # - reload firewall to apply changes
-              sudo systemctl reload firewalld
-            else
-                if ( command -v ufw >> /dev/null );then
-                    sudo systemctl start ufw
-                    sudo systemctl enable ufw
+                if ( ! firewall-cmd --list-protocols | grep -q "https" ); then
+                    sudo firewall-cmd --add-service=http --permanent
+                    sudo firewall-cmd --add-service=https --permanent
 
+                else
+                    echo -e "${green} ALREADY_ENABLED ${reset}"
+                fi
+
+                # - reload firewall to apply changes
+                sudo systemctl reload firewalld
+            elif ( command -v ufw >> /dev/null );then
+                sudo systemctl start ufw
+                sudo systemctl enable ufw
+
+                if ( ! ufw app list | grep -q "https" ); then
                     sudo ufw allow http
                     sudo ufw allow https
-                    
-                    # - reload firewall to apply changes
-                    sudo systemctl reload ufw
+
                 else
-                    echo "Something was wrong!"
+                    echo -e "${green} ALREADY_ENABLED ${reset}"
                 fi
+                
+                # - reload firewall to apply changes
+                sudo systemctl reload ufw
+            else
+                echo "Something was wrong!"
             fi
 
             exit 0
