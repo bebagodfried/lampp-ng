@@ -220,7 +220,7 @@ else
     sudo systemctl reload firewalld
 fi
 
-if ( command -v setsbool >> /dev/null ); then
+if ( command -v setsebool >> /dev/null ); then
     # --- allow httpd to unified
     sudo setsebool -P httpd_unified 1
 
