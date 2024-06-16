@@ -18,7 +18,7 @@ db_server='mariadb-server'
 
 w3_htdocs='/var/www/html/'
 
-lamppctl="bin/lampp"
+lamppctl="$(pwd)/bin/lampp"
 
 # packages manager
 if ( command -v apt-get >> /dev/null );then
